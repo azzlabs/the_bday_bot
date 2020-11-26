@@ -1,0 +1,26 @@
+{
+  "name": "the_bday_bot",
+  "version": "1.0.0",
+  "description": "A Telegram Bot for birthdays",
+  "main": "bday_bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node bday_bot.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azzlabs/the_bday_bot.git"
+  },
+  "keywords": [
+    "telegram",
+    "bot",
+    "birthdays"
+  ],
+  "author": "azzlabs",
+  "license": "ISC",
+  "dependencies": {
+    "cron": "^1.8.2",
+    "mongodb": "^3.6.3",
+    "telegraf": "^3.38.0"
+  }
+}
