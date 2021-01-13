@@ -15,9 +15,10 @@ var state = {};
 
 // -- "Start" command: gets bot info -- //
 bot.command('start', (ctx) => { 
-    ctx.replyWithMarkdown(`Everyone can use /add_my_birthday to add their own birthdays.\n
-    You can then use /start_alerts to start receiving reminders when it's someone's birthday.\n
-    You can see all the other commands using Telegram's bot commands list.`); 
+    console.log(ctx.message.from.username + ' called /start');
+    ctx.reply(`Everyone can use /add_my_birthday to add their own birthdays.
+You can then use /start_alerts to start receiving reminders when it's someone's birthday.
+You can see all the other commands using Telegram's bot commands list.`); 
 });
 
 // -- "Add birthday" command: sends info and sets data to insert a birthday -- //
