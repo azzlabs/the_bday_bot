@@ -104,7 +104,14 @@ bot.command('upcoming', async (ctx) => {
 bot.command('today', async ctx => {
     console.log('Called /today');
 
-    var birthdays = await db.find('birthdays', { chat_id: ctx.message.chat.id, year_day: yearDay(new Date()) });
+    var day_find = yearDay(new Date());
+
+    var birthdays = await db.find('birthdays', { chat_id: ctx.message.chat.id, year_day: day_find });
+
+    // Doing a second check if it's not a leap year (birthdays on the 29th of February will be called on the 28th)
+    if (day_find == 59 && !isLeapYear(new Date())) {
+        birthdays = birthdays.concat(await db.find('birthdays', { chat_id: grp.chat_id, year_day: day_find + 1 }));
+    }
 
     if (birthdays.length == 0) {
         return ctx.reply('No birthdays today :(');
@@ -115,7 +122,7 @@ bot.command('today', async ctx => {
     // Sends a different message for every birthday
     birthdays.forEach(async cumple => {
         const year = cumple.bday.getFullYear();
-        const old = (year == 1800 ? '' : `... now ${((new Date().getFullYear()) - year)} years old!`);
+        const old = (year == 1804 ? '' : `... now ${((new Date().getFullYear()) - year)} years old!`);
 
         const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
 
@@ -192,19 +199,26 @@ bot.on('text', async ctx => {
     }
 });
 
-// -- The cron job. Runs everyday at 10. -- //
-const job = new CronJob('0 10 * * *', async function() {
+// -- The cron job. Runs everyday at 8:30. -- //
+const job = new CronJob('30 8 * * *', async function() {
     console.log('Cron job has been fired');
 
     // Finds all groups
     const groups = await db.find('groups');
 
     groups.forEach(async grp => {
-        var birthdays = await db.find('birthdays', { chat_id: grp.chat_id, year_day: yearDay(new Date()) });
-    
+        var day_find = yearDay(new Date());
+
+        var birthdays = await db.find('birthdays', { chat_id: grp.chat_id, year_day: day_find });
+
+        // Doing a second check if it's not a leap year (birthdays on the 29th of February will be called on the 28th)
+        if (day_find == 59 && !isLeapYear(new Date())) {
+            birthdays = birthdays.concat(await db.find('birthdays', { chat_id: grp.chat_id, year_day: day_find + 1 }));
+        }
+
         birthdays.forEach(async cumple => {
             const year = cumple.bday.getFullYear();
-            const old = (year == 1800 ? '' : ` They're now ${((new Date().getFullYear()) - year)} years old!`);
+            const old = (year == 1804 ? '' : ` They're now ${((new Date().getFullYear()) - year)} years old!`);
     
             const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
 
@@ -224,6 +238,8 @@ job.start();
 // To space and beyond
 bot.launch();
 
+console.log('Started successfully!');
+
 // -- Utility functions. -- //
 function parseDate(str) {
     var m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
@@ -235,7 +251,7 @@ function parseDate(str) {
 
 function parseDateNoYear(str) {
     var m = str.match(/^(\d{1,2})\/(\d{1,2})$/)
-      , d = ((m) ? new Date(1800, m[2]-1, m[1]) : null)
+      , d = ((m) ? new Date(1804, m[2]-1, m[1]) : null)
       , matchesPadded = (d && (str == [padZero(d.getDate()), padZero(d.getMonth()+1)].join('/')))
       , matchesNonPadded = (d && (str == [d.getDate(), d.getMonth() + 1].join('/')));
     return (matchesPadded || matchesNonPadded) ? d : null;
@@ -245,10 +261,17 @@ function padZero(x) {
     return ((('' + x).length == 2) ? '' : '0') + x; 
 }
 
+// -- Given a date object, returns the number of days elapsed from January 1st of the give year -- //
 function yearDay(date) {
     var the_day = date.getDate();
     for (var i = 0; i < date.getMonth(); i++) {
         the_day += month_days[i];
     }
     return the_day;
+}
+
+// -- Given a date object, returns whether or not it's a leap year -- //
+function isLeapYear(date) {
+    year = date.getFullYear();
+    return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
 }
