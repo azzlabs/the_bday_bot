@@ -110,7 +110,7 @@ bot.command('today', async ctx => {
 
     // Doing a second check if it's not a leap year (birthdays on the 29th of February will be called on the 28th)
     if (day_find == 59 && !isLeapYear(new Date())) {
-        birthdays = birthdays.concat(await db.find('birthdays', { chat_id: grp.chat_id, year_day: day_find + 1 }));
+        birthdays = birthdays.concat(await db.find('birthdays', { chat_id: ctx.message.chat.id, year_day: day_find + 1 }));
     }
 
     if (birthdays.length == 0) {
