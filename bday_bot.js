@@ -65,7 +65,16 @@ bot.command('all_birthdays', async (ctx) => {
         const name = (cumple.username == null ? cumple.first_name : cumple.username);
 
         // Format example: "MrUser: 23 December"
-        the_reply += `*${name}*: ${padZero(cumple.bday.getDate())} ${months[cumple.bday.getMonth()]}\n`;
+        the_reply += `*${name}*: ${padZero(cumple.bday.getUTCDate())} ${months[cumple.bday.getUTCMonth()]}\n`;
+
+        /* THIS Happened here: https://www.youtube.com/watch?v=-5wpm-gesOY
+        console.log(
+        'Date: ', cumple.bday, 
+        'Old year_day', cumple.year_day, 
+        'Year_day CALC', yearDay(cumple.bday), 
+        'CHECK', cumple.year_day == yearDay(cumple.bday), 
+        'DAY: ', cumple.bday.getUTCDate(),
+        'NAME: ', cumple.username ); */
     });
 
     ctx.replyWithMarkdown(the_reply);
@@ -94,7 +103,7 @@ bot.command('upcoming', async (ctx) => {
         const name = (cumple.username == null ? cumple.first_name : cumple.username);
 
         // Format example: "MrUser: 23 December"
-        the_reply += `*${name}*: ${padZero(cumple.bday.getDate())} ${months[cumple.bday.getMonth()]}\n`;
+        the_reply += `*${name}*: ${padZero(cumple.bday.getUTCDate())} ${months[cumple.bday.getUTCMonth()]}\n`;
     });
 
     ctx.replyWithMarkdown(the_reply);
@@ -127,7 +136,7 @@ bot.command('today', async ctx => {
         const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
 
         // Format example: "@someuser's: 26 November (... now 21 years old! optional) - Happy birthday! 🥳"
-        await ctx.reply(`${name}: ${padZero(cumple.bday.getDate())} ${months[cumple.bday.getMonth()]}${old} - Happy birthday! 🥳`);
+        await ctx.reply(`${name}: ${padZero(cumple.bday.getUTCDate())} ${months[cumple.bday.getUTCMonth()]}${old} - Happy birthday! 🥳`);
     });
 });
 
@@ -192,6 +201,8 @@ bot.on('text', async ctx => {
                                             year_day: yearDay(the_date) });
         });
 
+        console.log('- Date added: ', the_date);
+
         // Clears the user temp state
         state[cur_user_id].last_command = null;
 
@@ -243,17 +254,17 @@ console.log('Started successfully!');
 // -- Utility functions. -- //
 function parseDate(str) {
     var m = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
-      , d = (m) ? new Date(m[3], m[2]-1, m[1]) : null
-      , matchesPadded = (d&&(str==[padZero(d.getDate()),padZero(d.getMonth()+1),d.getFullYear()].join('/')))
-      , matchesNonPadded = (d&&(str==[d.getDate(),d.getMonth()+1,d.getFullYear()].join('/')));
+      , d = (m) ? new Date(`${m[3]}/${m[2]}/${m[1]} 10:00:00 UTC`) : null
+      , matchesPadded = (d&&(str==[padZero(d.getUTCDate()),padZero(d.getUTCMonth()+1),d.getUTCFullYear()].join('/')))
+      , matchesNonPadded = (d&&(str==[d.getUTCDate(),d.getUTCMonth()+1,d.getUTCFullYear()].join('/')));
     return (matchesPadded || matchesNonPadded) ? d : null;
 }
 
 function parseDateNoYear(str) {
     var m = str.match(/^(\d{1,2})\/(\d{1,2})$/)
-      , d = ((m) ? new Date(1804, m[2]-1, m[1]) : null)
-      , matchesPadded = (d && (str == [padZero(d.getDate()), padZero(d.getMonth()+1)].join('/')))
-      , matchesNonPadded = (d && (str == [d.getDate(), d.getMonth() + 1].join('/')));
+      , d = (m) ? new Date(`1804/${m[2]}/${m[1]} 10:00:00 UTC`) : null
+      , matchesPadded = (d && (str == [padZero(d.getUTCDate()), padZero(d.getUTCMonth()+1)].join('/')))
+      , matchesNonPadded = (d && (str == [d.getUTCDate(), d.getUTCMonth() + 1].join('/')));
     return (matchesPadded || matchesNonPadded) ? d : null;
 }
 
@@ -263,8 +274,8 @@ function padZero(x) {
 
 // -- Given a date object, returns the number of days elapsed from January 1st of the give year -- //
 function yearDay(date) {
-    var the_day = date.getDate();
-    for (var i = 0; i < date.getMonth(); i++) {
+    var the_day = date.getUTCDate();
+    for (var i = 0; i < date.getUTCMonth(); i++) {
         the_day += month_days[i];
     }
     return the_day;
@@ -272,6 +283,6 @@ function yearDay(date) {
 
 // -- Given a date object, returns whether or not it's a leap year -- //
 function isLeapYear(date) {
-    year = date.getFullYear();
+    year = date.getUTCFullYear();
     return ((year % 4 == 0) && (year % 100 != 0)) || (year % 400 == 0);
 }
