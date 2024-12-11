@@ -37,7 +37,9 @@ bot.command('add_my_birthday', async ctx => {
     }
     state[user_id].last_command = 'add_bday';
 
-    ctx.replyWithMarkdown('Alright!' + "\n" + 'Hit *reply to this message* and tell us the date. You can use the formats DD/MM/YYYY or just DD/MM if you\'re too old :p');
+    try {
+        await ctx.replyWithMarkdown('Alright!' + "\n" + 'Hit *reply to this message* and tell us the date. You can use the formats DD/MM/YYYY or just DD/MM if you\'re too old :p');
+    } catch (e) { console.error(e) }
 });
 
 // -- "Delete birthday" command: deletes a birthday record -- //
@@ -65,7 +67,9 @@ bot.command('delete_a_birthday', async ctx => {
     }
     state[user_id].last_command = 'del_bday';
 
-    return ctx.replyWithMarkdown('Ok' + "\n" + 'Hit *reply to this message* and tag the username (or just write the first name) you want to remove from the birthday list.');
+    try {
+        await ctx.replyWithMarkdown('Ok' + "\n" + 'Hit *reply to this message* and tag the username (or just write the first name) you want to remove from the birthday list.');
+    } catch (e) { console.error(e) }
 });
 
 // -- "All birthdays" command: sends a list of all the birthdays added for a group -- //
@@ -91,7 +95,9 @@ bot.command('all_birthdays', async (ctx) => {
         'NAME: ', cumple.username ); */
     });
 
-    ctx.replyWithMarkdown(the_reply);
+    try {
+        await ctx.replyWithMarkdown(the_reply);
+    } catch (e) { console.error(e) }
 });
 
 // -- "Upcoming birthdays" command: sends a short list the last 5 upcoming birthdays added for a group -- //
@@ -120,7 +126,9 @@ bot.command('upcoming', async (ctx) => {
         the_reply += `*${name}*: ${padZero(cumple.bday.getUTCDate())} ${months[cumple.bday.getUTCMonth()]}\n`;
     });
 
-    ctx.replyWithMarkdown(the_reply);
+    try {
+        await ctx.replyWithMarkdown(the_reply);
+    } catch (e) { console.error(e) }
 });
 
 // -- "Today's birthdays" command: sends a list with today's birthdays -- //
@@ -140,7 +148,9 @@ bot.command('today', async ctx => {
         return ctx.reply('No birthdays today :(');
     }
 
-    await ctx.reply('Here' + (birthdays.length > 1 ? ' are' : '\'s') + ' today\'s birthday' + (birthdays.length > 1 ? 's:' : ':'));
+    try {
+        await ctx.reply('Here' + (birthdays.length > 1 ? ' are' : '\'s') + ' today\'s birthday' + (birthdays.length > 1 ? 's:' : ':'));
+    } catch (e) { console.error(e) }
 
     // Sends a different message for every birthday
     birthdays.forEach(async cumple => {
@@ -150,7 +160,9 @@ bot.command('today', async ctx => {
         const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
 
         // Format example: "@someuser's: 26 November (... now 21 years old! optional) - Happy birthday! 🥳"
-        await ctx.reply(`${name}: ${padZero(cumple.bday.getUTCDate())} ${months[cumple.bday.getUTCMonth()]}${old} - Happy birthday! 🥳`);
+        try {
+            await ctx.reply(`${name}: ${padZero(cumple.bday.getUTCDate())} ${months[cumple.bday.getUTCMonth()]}${old} - Happy birthday! 🥳`);
+        } catch (e) { console.error(e) }
     });
 });
 
@@ -253,7 +265,9 @@ bot.command('start_alerts', async ctx => {
         return await coll.insertOne({ chat_id: ctx.message.chat.id, bot_active: true });
     });
 
-    return ctx.reply('Alright, I\'ll check everyday for birthdays. Stay tuned! ;)');
+    try {
+        await ctx.reply('Alright, I\'ll check everyday for birthdays. Stay tuned! ;)');
+    } catch (e) { console.log(e) }
 });
 
 // -- "Stop alerts" command: removes the group from the alerts list -- //
@@ -269,7 +283,9 @@ bot.command('stop_alerts', async ctx => {
         return await coll.deleteOne({ chat_id: ctx.message.chat.id });
     });
 
-    return ctx.reply('I\'ll no longer check everyday for birthdays :(');
+    try {
+        await ctx.reply('I\'ll no longer check everyday for birthdays :(');
+    } catch (e) { console.log(e) }
 });
 
 // -- Listens for plain text messages from the user. In groups, just replies to the bot are considered. -- //
@@ -281,60 +297,62 @@ bot.on('text', async ctx => {
     // Ignores the message if the user has not previusly run the "add birthday" command
     if (!state[cur_user_id]) return;
 
-    if (state[cur_user_id].last_command == 'del_bday') {
-        if (ctx.message?.entities) {
-            const ent = ctx.message.entities.filter(e => e.type === 'mention').map(e => ctx.message.text.substr(e.offset + 1, e.length - 1));
-            if (ent?.[0]) {
+    try {
+        if (state[cur_user_id].last_command == 'del_bday') {
+            if (ctx.message?.entities) {
+                const ent = ctx.message.entities.filter(e => e.type === 'mention').map(e => ctx.message.text.substr(e.offset + 1, e.length - 1));
+                if (ent?.[0]) {
+                    const res = await db.mongoTransaction('birthdays', async function (coll) {
+                        return await coll.deleteOne({ chat_id: ctx.message.chat.id, username: ent?.[0] });
+                    });
+
+                    return await ctx.reply(res.deletedCount ? 'Done!' : 'Couldn\'t find a user with that username');
+                }
+            } else {
                 const res = await db.mongoTransaction('birthdays', async function (coll) {
-                    return await coll.deleteOne({ chat_id: ctx.message.chat.id, username: ent?.[0] });
+                    return await coll.deleteOne({ chat_id: ctx.message.chat.id, first_name: ctx.message.text });
                 });
 
-                return ctx.reply(res.deletedCount ? 'Done!' : 'Couldn\'t find a user with that username');
+                return await ctx.reply(res.deletedCount ? 'Done!' : 'Couldn\'t find a user with that first name');
             }
-        } else {
-            const res = await db.mongoTransaction('birthdays', async function (coll) {
-                return await coll.deleteOne({ chat_id: ctx.message.chat.id, first_name: ctx.message.text });
-            });
 
-            return ctx.reply(res.deletedCount ? 'Done!' : 'Couldn\'t find a user with that first name');
+            // Clears the user temp state
+            state[cur_user_id].last_command = null;
         }
 
-        // Clears the user temp state
-        state[cur_user_id].last_command = null;
-    }
+        if (state[cur_user_id].last_command == 'add_bday') {
 
-    if (state[cur_user_id].last_command == 'add_bday') {
+            const the_msg = ctx.message.text;
+            var the_date = parseDate(the_msg);
 
-        const the_msg = ctx.message.text;
-        var the_date = parseDate(the_msg);
-
-        // If the date parsing fails, try to parse the date without the year
-        if (the_date == null) {
-            the_date = parseDateNoYear(the_msg);
-
+            // If the date parsing fails, try to parse the date without the year
             if (the_date == null) {
-                return ctx.reply('Hmmm, that does not seem to be a valid date.' + "\n" + 'You can reply to this message with a valid date');
+                the_date = parseDateNoYear(the_msg);
+
+                if (the_date == null) {
+                    return await ctx.reply('Hmmm, that does not seem to be a valid date.' + "\n" + 'You can reply to this message with a valid date');
+                }
             }
-        }
 
-        db.mongoTransaction('birthdays', async function (coll) {
-            return await coll.insertOne({
-                chat_id: ctx.message.chat.id,
-                user_id: cur_user_id,
-                username: ctx.message.from.username,
-                first_name: ctx.message.from.first_name,
-                bday: the_date,
-                year_day: yearDay(the_date)
+            db.mongoTransaction('birthdays', async function (coll) {
+                return await coll.insertOne({
+                    chat_id: ctx.message.chat.id,
+                    user_id: cur_user_id,
+                    username: ctx.message.from.username,
+                    first_name: ctx.message.from.first_name,
+                    bday: the_date,
+                    year_day: yearDay(the_date)
+                });
             });
-        });
 
-        console.log('- Date added: ', the_date);
+            console.log('- Date added: ', the_date);
 
-        // Clears the user temp state
-        state[cur_user_id].last_command = null;
+            // Clears the user temp state
+            state[cur_user_id].last_command = null;
 
-        return ctx.reply('Your birthday has been saved succesfully!');
-    }
+            await ctx.reply('Your birthday has been saved succesfully!');
+        }
+    } catch (e) { console.log(e) }
 });
 
 // -- The cron job. Runs everyday at 8:30. -- //
@@ -354,19 +372,23 @@ const job = new CronJob('30 8 * * *', async function () {
             birthdays = birthdays.concat(await db.find('birthdays', { chat_id: grp.chat_id, year_day: day_find + 1 }));
         }
 
-        birthdays.forEach(async cumple => {
-            const year = cumple.bday.getFullYear();
-            const old = (year == 1804 ? '' : ` They're now ${((new Date().getFullYear()) - year)} years old!`);
+        try {
+            birthdays.forEach(async cumple => {
+                const year = cumple.bday.getFullYear();
+                const old = (year == 1804 ? '' : ` They're now ${((new Date().getFullYear()) - year)} years old!`);
 
-            const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
+                const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
 
-            // "Today it's @someuser' birthday. (They're now 21 years old! optional)"
-            await bot.telegram.sendMessage(grp.chat_id, `Today it's ${name} birthday.${old}`);
+                // "Today it's @someuser' birthday. (They're now 21 years old! optional)"
+                await bot.telegram.sendMessage(grp.chat_id, `Today it's ${name} birthday.${old}`);
 
-            // Selects a random birthday wish from file
-            var rand = Math.floor(Math.random() * (wishes.length));
-            await bot.telegram.sendMessage(grp.chat_id, `${wishes[rand]} - Happy birthday! 🥳`);
-        });
+                // Selects a random birthday wish from file
+                var rand = Math.floor(Math.random() * (wishes.length));
+                await bot.telegram.sendMessage(grp.chat_id, `${wishes[rand]} - Happy birthday! 🥳`);
+            });
+        } catch (e) {
+            console.log('Cron err', e);
+        }
     });
 
     // Why not clear the state everyday?
@@ -379,7 +401,7 @@ job.start();
 // To space and beyond
 bot.launch();
 
-console.log('Started successfully!');
+console.log('Started successfully! Maybe');
 
 // -- Utility functions. -- //
 function parseDate(str) {
