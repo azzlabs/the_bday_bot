@@ -180,7 +180,8 @@ bot.command('cleanup', async ctx => {
     const bdays_check = (await Promise.all(bdays.map(async b => {
         try {
             return { inGroup: await ctx.telegram.getChatMember(b.chat_id, b.user_id), ...b };
-        } catch {
+        } catch(e) {
+            console.log(e);
             return { inGroup: false, ...b };
         }
     }))).filter(b => b.inGroup === false);
