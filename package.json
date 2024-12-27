@@ -18,8 +18,10 @@
   ],
   "author": "azzlabs",
   "license": "ISC",
+  "type": "module",
   "dependencies": {
     "cron": "^1.8.2",
+    "express": "^4.21.2",
     "mongodb": "^3.6.3",
     "telegraf": "^3.38.0"
   }

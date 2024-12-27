@@ -1,8 +1,9 @@
-const Telegraf = require('telegraf');
-const config = require('./config.json');
-const wishes = require('./birthday_wishes.json');
-const CronJob = require('cron').CronJob;
-const MongoDB = require('./db_fns.js');
+import Telegraf from 'telegraf';
+import config from './config.json' with { type: "json" };
+import wishes from './birthday_wishes.json' with { type: "json" };
+import { CronJob } from 'cron';
+import MongoDB from './db_fns.js';
+import registerApi from './web_ui_api.js';
 const bot = new Telegraf(config.telegraf_key);
 const db = new MongoDB(config);
 const months = ['January', 'February', 'March', 'April', 'May', 'JUNe', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -401,6 +402,8 @@ job.start();
 
 // To space and beyond
 bot.launch();
+
+registerApi();
 
 console.log('Started successfully! Maybe');
 

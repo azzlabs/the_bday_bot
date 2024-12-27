@@ -34,4 +34,4 @@ class BotDatabaseFunctions {
     }
 }
 
-module.exports = BotDatabaseFunctions;
+export default BotDatabaseFunctions;
