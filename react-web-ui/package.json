@@ -4,6 +4,7 @@
   "main": "app.js",
   "dependencies": {
     "@principalstudio/html-webpack-inject-preload": "^1.2.7",
+    "@telegram-auth/react": "^1.0.4",
     "css-loader": "^7.1.2",
     "dotenv-webpack": "^8.1.0",
     "html-webpack-plugin": "^5.6.0",
