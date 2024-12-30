@@ -1,6 +1,6 @@
 import React from 'react';
 
-const LoadingSpinner = ({ className, ...props }) => (
+export const SpinnerSvg = ({ className, ...props }) => (
   <svg
     aria-hidden="true"
     className={`text-slate-50 animate-spin fill-slate-600 ${className}`}
@@ -18,6 +18,14 @@ const LoadingSpinner = ({ className, ...props }) => (
       fill="currentFill"
     />
   </svg>
+);
+
+const LoadingSpinner = ({ className, addText = false, children = 'Caricamento...', svgProps = {}, ...props }) => (
+  !addText ? <SpinnerSvg {...{ className, ...props }} /> :
+    <div className={`flex flex-col gap-y-2 justify-center items-center h-48 ${className}`} {...props}>
+      <SpinnerSvg className="w-16" {...svgProps} />
+      <div className="text-slate-600 font-semibold mt-2">{children}</div>
+    </div>
 );
 
 export default LoadingSpinner;

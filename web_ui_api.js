@@ -25,7 +25,7 @@ export const registerApiRoutes = () => {
     res.send(auth_result);
   });
 
-  api.post('/api/getServerList', auth, async (req, res) => {
+  api.post('/api/getChatList', auth, async (req, res) => {
     try {
       const groups = (await db.find('groups', { webAdmins: req?.user_id }));
 

@@ -2,7 +2,7 @@ import { useState, useEffect, createContext } from 'react';
 import Alert from './Components/UI/Alert';
 import LoginComponent from './Components/LoginComponent';
 import { useLocalStorage } from '../utils/UseLocalStorage';
-import BirthdaysEditor from './Components/BirthdaysEditor';
+import ChooseChat from './Components/ChooseChat';
 
 export const WebUIContext = createContext(null);
 
@@ -19,7 +19,7 @@ const BdayBotWebUI = () => {
           {message ? <Alert message={message} onDismiss={() => setMessage(null)} className="mb-3" /> : null}
           
           {currentUser ? 
-            <BirthdaysEditor /> :
+            <ChooseChat /> :
             <LoginComponent />
           }
         </div>
