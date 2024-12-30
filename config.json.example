@@ -1,5 +1,7 @@
 {
     "telegraf_key": "place your key here",
     "mongo_url": "mongodb://localhost:27017",
-    "mongo_db_name": "bday_bot"
+    "mongo_db_name": "bday_bot",
+    "jwt_secret": "jwt secret key",
+    "api_port": 3080
 }

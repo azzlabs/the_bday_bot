@@ -431,7 +431,8 @@ job.start();
 // To space and beyond
 bot.launch();
 
-registerApi();
+// Register the bot API routes
+registerApi(config.api_port);
 
 console.log('Started successfully! Maybe');
 
