@@ -8,6 +8,8 @@ class BotDatabaseFunctions {
         
         // Collection names
         this.setting_collection = 'bot_settings';
+
+        this.oid = mongo.ObjectId;
     }
 
     // Executes a database transaction with MongoDB

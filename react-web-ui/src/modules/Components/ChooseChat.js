@@ -3,9 +3,29 @@ import { WebUIContext } from "../BdayBotWebUI";
 import Alert from "./UI/Alert";
 import Button from "./UI/Button";
 import LoadingSpinner from "./UI/LoadingSpinner";
-import { FaSignOutAlt, FaRedo, FaArrowRight } from "react-icons/fa";
-import { http } from "../../utils/Utils";
+import { FaSignOutAlt, FaRedo, FaArrowRight, FaRegPaperPlane } from "react-icons/fa";
+import { base64toBlob, http } from "../../utils/Utils";
 import ManageChat from "./ManageChat";
+
+const ChatImage = ({ image_id }) => {
+  const [chatImg, setChatImg] = useState(null);
+
+  const fetchImage = async () => {
+    const req = await http({ method: 'POST', url: 'api/getTelegraphFile', form: { file_id: image_id } });
+
+    if (req?.success) {
+      setChatImg(await base64toBlob(req?.file));
+    }
+  };
+
+  useEffect(() => {
+    fetchImage();
+  }, [image_id]);
+
+  return chatImg ? 
+    <img className="w-full rounded-full shadow-sm object-cover" src={chatImg} /> : 
+    <div className="w-full aspect-square rounded-full text-sky-800 flex items-center justify-center bg-sky-50 text-xs"><FaRegPaperPlane /></div>;
+}
 
 const ChooseChat = () => {
   const [chats, setChats] = useState(null);
@@ -14,7 +34,7 @@ const ChooseChat = () => {
 
   const fetchGroups = async () => {
     setChats(null);
-    const req = await http({ method: 'POST', url: 'api/getChatList' });
+    const req = await http({ method: 'POST', url: 'api/getChatList' }, currentUser.token);
 
     if (req?.success) {
       setChats(req?.found);
@@ -25,7 +45,7 @@ const ChooseChat = () => {
 
   useEffect(() => {
     fetchGroups();
-  }, [currentUser])
+  }, [currentUser]);
 
   return <>
     <Alert className="mb-4">
@@ -54,7 +74,9 @@ const ChooseChat = () => {
             <ul className="flex flex-col gap-y-3">
               {chats.map(({ group }) =>
                 <li className="flex">
-                  <div className="w-8 mr-3 mt-1"><img className="w-full rounded-full shadow" src={currentUser?.photo_url} /></div>
+                  <div className="w-8 mr-3 mt-1">
+                    <ChatImage image_id={group?.photo?.small_file_id} />
+                  </div>
                   <div className="flex-1">
                     <div className="font-semibold">{group?.title}</div>
                     <div className="text-xs text-gray-600">{group?.description || <em>No description</em>}</div>

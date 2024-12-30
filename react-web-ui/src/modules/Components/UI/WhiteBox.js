@@ -23,7 +23,7 @@ const WhiteBox = ({
 
   return (
     <div
-      className={`bg-white rounded-2xl box-shadow-movo m-4 ${
+      className={`bg-white rounded m-4 ${
         hideOverflow ? 'overflow-hidden' : ''
       } ${className}`}
       {...props}

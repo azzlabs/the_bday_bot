@@ -35,7 +35,7 @@ export const formatThousands = (value) =>
 
 const BASE_URL = process.env.REACT_APP_API_URL;
 
-export const http = async ({ method, url, form, json = true }) => {
+export const http = async ({ method, url, form, json = true }, force_token = false) => {
   const currentUser = getStorageValue('currentUser');
   const fullUrl = url.indexOf('http') === 0 ? url : BASE_URL + url;
   const options = {
@@ -46,7 +46,7 @@ export const http = async ({ method, url, form, json = true }) => {
   if (!form || !(form instanceof FormData)) {
     options.headers['Content-Type'] = 'application/json';
   }
-  const authToken = currentUser?.token; //new Cookies().get(AUTH_COOKIE_VAR);
+  const authToken = force_token || currentUser?.token; //new Cookies().get(AUTH_COOKIE_VAR);
   if (authToken) {
     options.headers.Authorization = `Bearer ${authToken}`;
   }
@@ -54,7 +54,7 @@ export const http = async ({ method, url, form, json = true }) => {
   let content;
   try {
     content = json ? await res.json() : await res.text();
-  } catch (e) {}
+  } catch (e) { }
 
   if (!res.ok) {
     if (!content) {
@@ -116,5 +116,10 @@ export const exportToCsv = (filename, dataArray) => {
     URL.revokeObjectURL(url);
   }
 };
+
+export const base64toBlob = async (base64Data) => {
+  const binary = await fetch(base64Data);
+  return URL.createObjectURL(await binary.blob());
+}
 
 export const gn = (from, to) => Array.from({ length: to - from + 1 }, (_, index) => from + index);

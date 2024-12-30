@@ -14,7 +14,7 @@ const Modal = ({
   isVisible,
   className = '',
   bgClassName = 'items-center',
-  innerClassName = 'px-6 py-4',
+  innerClassName = 'px-4 py-3',
   headerChildren,
   children,
   size = 'def',
@@ -37,12 +37,12 @@ const Modal = ({
         <div className={`relative border-b font-bold text-lg ${innerClassName}`}>
           {headerChildren}
 
-          <div className={`font-bold absolute top-0 right-0 p-2.5`}>
-            <Button btnStyle="white" className="enabled:text-black" onClick={onClose}>
+          <div className={`font-bold absolute top-0 right-0 p-1.5`}>
+            <button className="hover:opacity-60" onClick={onClose}>
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" data-slot="icon" className="w-6 h-6">
                 <path d="M6 18 18 6M6 6l12 12" />
               </svg>
-            </Button>
+            </button>
           </div>
         </div>
         <div className={innerClassName}>

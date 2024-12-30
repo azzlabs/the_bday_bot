@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 import MongoDB from './db_fns.js';
+import fetch from 'node-fetch';
 const db = new MongoDB(config);
 const bot = new Telegraf(config.telegraf_key);
 
@@ -50,6 +51,60 @@ export const registerApiRoutes = () => {
       res.send({ found: birthdays, success: 1 });
     } catch (error) {
       res.send({ found: [], success: 0, error });
+    }
+  });
+
+  api.post('/api/deleteBirthday', auth, async (req, res) => {
+    try {
+      if (!req?.body?.birthday_id) {
+        return res.send({ success: 0, error: 'Birthday id not found' });
+      }
+
+      const result = await db.mongoTransaction('birthdays', async function (coll) {
+        return await coll.deleteOne({ _id: db.oid(req?.body?.birthday_id) });
+      });
+
+      res.send({ success: 1, result });
+    } catch (error) {
+      res.send({ success: 0, error });
+    }
+  });
+
+  api.post('/api/getTelegraphFile', auth, async (req, res) => {
+    try {
+      if (!req?.body?.file_id) {
+        return res.send({ success: 0, error: 'Photo id not found' });
+      }
+
+      const imageUrlData = await fetch(await bot.telegram.getFileLink(req?.body?.file_id));
+      const imageBase64 = `data:${imageUrlData.headers.get('content-type')};base64,${Buffer.from(await imageUrlData.arrayBuffer()).toString('base64')}`;
+
+      res.send({ file: imageBase64, success: 1 });
+    } catch (error) {
+      res.send({ file: null, success: 0, error });
+    }
+  });
+
+  api.post('/api/getUserPhoto', auth, async (req, res) => {
+    try {
+      if (!req?.body?.user_id) {
+        return res.send({ success: 0, error: 'User id not found' });
+      }
+
+      const found = await bot.telegram.getUserProfilePhotos(req?.body?.user_id);
+
+      if (found && found?.photos?.length > 1) {
+        const use_photo = found?.photos[0]?.[0];
+
+        const imageUrlData = await fetch(await bot.telegram.getFileLink(use_photo?.file_id));
+        const imageBase64 = `data:${imageUrlData.headers.get('content-type')};base64,${Buffer.from(await imageUrlData.arrayBuffer()).toString('base64')}`;
+
+        return res.send({ file: imageBase64, success: 1 });
+      }
+
+      res.send({ file: null, success: 0, error: 'No pic found' });
+    } catch (error) {
+      res.send({ file: null, success: 0, error });
     }
   });
 
