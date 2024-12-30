@@ -1,3 +1,5 @@
+import mongo from 'mongodb';
+
 class BotDatabaseFunctions {
     constructor(config) {
         // Load config
@@ -10,7 +12,7 @@ class BotDatabaseFunctions {
 
     // Executes a database transaction with MongoDB
     async mongoTransaction(coll_name, callback) {
-        const Client = require('mongodb').MongoClient(this.mongo_url, { useUnifiedTopology: true });
+        const Client = mongo.MongoClient(this.mongo_url, { useUnifiedTopology: true });
         var res = [];
 
         try {

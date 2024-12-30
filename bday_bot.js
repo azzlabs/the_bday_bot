@@ -167,6 +167,34 @@ bot.command('today', async ctx => {
     });
 });
 
+// -- "webregister" command: registers a user inside the group record to use in the WebUI -- //
+bot.command('webregister', async ctx => {
+    console.log('Called /webregister');
+
+    const user_id = ctx.message.from.id;
+    if (!(await userIsAdmin(ctx.message.chat.id, user_id, ctx))) {
+        return ctx.reply('This command can only be run by a group admin');
+    }
+
+    const groups = await db.find('groups', { chat_id: ctx.message.chat.id });
+
+    if (groups.length == 0) {
+        db.mongoTransaction('groups', async function (coll) {
+            return await coll.insertOne({ chat_id: ctx.message.chat.id, bot_active: false, webAdmins: [ user_id ] });
+        });
+    } else {
+        if (!groups[0]?.webAdmins?.find(a => a === user_id)) {
+            db.mongoTransaction('groups', async function (coll) {
+                return await coll.updateOne({ chat_id: ctx.message.chat.id }, { $push: { webAdmins: user_id } });
+            });
+        } else {
+            return ctx.replyWithMarkdown('Already registered.');
+        }
+    }
+
+    return ctx.replyWithMarkdown('Done, you can now use the web UI.');
+});
+
 // -- "Cleanup" command: removes all users that are anymore in the group -- //
 bot.command('cleanup', async ctx => {
     console.log('Called /cleanup');
@@ -362,7 +390,7 @@ const job = new CronJob('30 8 * * *', async function () {
     console.log('Cron job has been fired');
 
     // Finds all groups
-    const groups = await db.find('groups');
+    const groups = await db.find('groups', { bot_active: true });
 
     groups.forEach(async grp => {
         var day_find = yearDay(new Date());
@@ -374,23 +402,23 @@ const job = new CronJob('30 8 * * *', async function () {
             birthdays = birthdays.concat(await db.find('birthdays', { chat_id: grp.chat_id, year_day: day_find + 1 }));
         }
 
-        try {
-            birthdays.forEach(async cumple => {
-                const year = cumple.bday.getFullYear();
-                const old = (year == 1804 ? '' : ` They're now ${((new Date().getFullYear()) - year)} years old!`);
+        birthdays.forEach(async cumple => {
+            const year = cumple.bday.getFullYear();
+            const old = (year == 1804 ? '' : ` They're now ${((new Date().getFullYear()) - year)} years old!`);
 
-                const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
+            const name = (cumple.username == null ? `*${cumple.first_name}*'s` : `@${cumple.username}'s`);
 
+            try {
                 // "Today it's @someuser' birthday. (They're now 21 years old! optional)"
                 await bot.telegram.sendMessage(grp.chat_id, `Today it's ${name} birthday.${old}`);
 
                 // Selects a random birthday wish from file
-                var rand = Math.floor(Math.random() * (wishes.length));
+                const rand = Math.floor(Math.random() * (wishes.length));
                 await bot.telegram.sendMessage(grp.chat_id, `${wishes[rand]} - Happy birthday! 🥳`);
-            });
-        } catch (e) {
-            console.log('Cron err', e);
-        }
+            } catch (e) {
+                console.log('Cron err', e);
+            }
+        });
     });
 
     // Why not clear the state everyday?

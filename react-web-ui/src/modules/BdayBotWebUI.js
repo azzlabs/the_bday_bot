@@ -1,22 +1,30 @@
 import { useState, useEffect, createContext } from 'react';
-import IndexRoute from './Routes/IndexRoute';
+import Alert from './Components/UI/Alert';
+import LoginComponent from './Components/LoginComponent';
+import { useLocalStorage } from '../utils/UseLocalStorage';
+import BirthdaysEditor from './Components/BirthdaysEditor';
 
-export const WidgetContext = createContext(null);
+export const WebUIContext = createContext(null);
 
 const BdayBotWebUI = () => {
-  const [searchParams, setSearchParams] = useState(null);
-  const [curScreen, setCurScreen] = useState('index');
-
-  const appRoutes = {
-    'index': <IndexRoute />,
-  };
-
-  const curRoute = appRoutes?.[curScreen] || appRoutes['index'];
+  const [currentUser, setCurrentUser] = useLocalStorage('currentUser', null);
+  const [message, setMessage] = useState(null);
 
   return (
-    <WidgetContext.Provider value={{ searchParams, setSearchParams }}>
-      {curRoute}
-    </WidgetContext.Provider>
+    <WebUIContext.Provider value={{ currentUser, setCurrentUser, setMessage }}>
+      <div className="mx-auto max-w-[30rem] w-full">
+        <h2 className="text-center mb-4 text-2xl font-semibold">The Birthday Bot Web UI</h2>
+
+        <div className="bg-white p-4 w-full rounded border border-slate-300">
+          {message ? <Alert message={message} onDismiss={() => setMessage(null)} className="mb-3" /> : null}
+          
+          {currentUser ? 
+            <BirthdaysEditor /> :
+            <LoginComponent />
+          }
+        </div>
+      </div>
+    </WebUIContext.Provider>
   )
 }
 

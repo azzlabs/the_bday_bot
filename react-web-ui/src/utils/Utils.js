@@ -1,3 +1,5 @@
+import { getStorageValue } from "./UseLocalStorage";
+
 export const hexToRGB = (h) => {
   let r = 0;
   let g = 0;
@@ -32,9 +34,9 @@ export const formatThousands = (value) =>
   }).format(value);
 
 const BASE_URL = process.env.REACT_APP_API_URL;
-const API_TOKEN = null;//process.env.REACT_APP_API_TOKEN;
 
 export const http = async ({ method, url, form, json = true }) => {
+  const currentUser = getStorageValue('currentUser');
   const fullUrl = url.indexOf('http') === 0 ? url : BASE_URL + url;
   const options = {
     method: method || 'GET',
@@ -44,7 +46,7 @@ export const http = async ({ method, url, form, json = true }) => {
   if (!form || !(form instanceof FormData)) {
     options.headers['Content-Type'] = 'application/json';
   }
-  const authToken = API_TOKEN; //new Cookies().get(AUTH_COOKIE_VAR);
+  const authToken = currentUser?.token; //new Cookies().get(AUTH_COOKIE_VAR);
   if (authToken) {
     options.headers.Authorization = `Bearer ${authToken}`;
   }
@@ -78,13 +80,6 @@ export const NATIONAL_ID_REGEX =
 export const URL_REGEX =
   /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)/i;
 
-export const MOVOLAB_ROLE_ADMIN = 'admin';
-export const USER_ROLE_CLIENT = 'client';
-export const CLIENT_ROLE_ADMIN = 'clientAdmin';
-export const CLIENT_ROLE_OPERATOR = 'clientOperator';
-export const CORPORATE_ROLE_ADMIN = 'corporateAdmin';
-export const CORPORATE_ROLE_OPERATOR = 'corporateOperator';
-
 export const removeUndefinedNullAndEmpty = (obj) => {
   for (let key in obj) {
     if (obj[key] === undefined || obj[key] === null) {
@@ -97,38 +92,6 @@ export const removeUndefinedNullAndEmpty = (obj) => {
     }
   }
   return obj;
-};
-
-const checkIncludes = (object, value) => {
-  if (typeof object === 'string') {
-    return object.toLowerCase().includes(value);
-  } else if (Array.isArray(object)) {
-    for (const item of object) {
-      if (checkIncludes(item, value) === true) {
-        return true;
-      }
-    }
-    return false;
-  } else if (typeof object === 'object') {
-    for (const key in object) {
-      if (typeof object[key] === 'string') {
-        if (String(object[key]).toLowerCase().includes(value)) {
-          return true;
-        }
-      } else if (Array.isArray(object[key])) {
-        for (const item1 of object[key]) {
-          if (checkIncludes(item1, value) === true) {
-            return true;
-          }
-        }
-      } else if (typeof object[key] === 'object') {
-        if (checkIncludes(object[key], value) === true) {
-          return true;
-        }
-      }
-    }
-    return false;
-  } else return false;
 };
 
 export const filterDataByValue = (data, value) => {
@@ -152,29 +115,6 @@ export const exportToCsv = (filename, dataArray) => {
 
     URL.revokeObjectURL(url);
   }
-};
-
-export const countDays = (pickUp, dropOff, rentBuffer = 0) => {
-  const oneDay = 24 * 60 * 60 * 1000;
-  const pickUpDate = new Date(pickUp);
-  const dropOffDate = new Date(dropOff);
-  const minutesDiff = rentBuffer * 60 * 1000;
-
-  if (dropOffDate < pickUpDate) {
-    return 0;
-  }
-
-  const diffDays = Math.ceil(Math.abs((dropOffDate - pickUpDate - minutesDiff) / oneDay));
-  return Math.max(diffDays, 1);
-};
-
-export const urlSerialize = (obj) => {
-  const str = [];
-  for (const p in obj)
-    if (obj.hasOwnProperty(p)) {
-      str.push(`${encodeURIComponent(p)}=${encodeURIComponent(obj[p])}`);
-    }
-  return str.join('&');
 };
 
 export const gn = (from, to) => Array.from({ length: to - from + 1 }, (_, index) => from + index);

@@ -1,7 +1,12 @@
-import express from "express";
-import config from './config.json' with { type: "json" };
+import express from 'express';
+import Telegraf from 'telegraf';
+import config from './config.json' with { type: 'json' };
 import crypto from 'crypto';
 import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import MongoDB from './db_fns.js';
+const db = new MongoDB(config);
+const bot = new Telegraf(config.telegraf_key);
 
 export const registerApiRoutes = () => {
   const api = express();
@@ -9,13 +14,43 @@ export const registerApiRoutes = () => {
   api.use(cors());
   api.use(express.json());
 
-  api.post("/api/auth", (req, res) => {
-
+  api.post('/api/auth', (req, res) => {
     const body = req?.body;
+    const auth_result = telegramAuth(body);
 
-    const { success: auth_result } = telegramAuth(body);
+    if (auth_result.success) {
+      auth_result.bearer = jwt.sign({ id: body?.id, date: body?.auth_date }, config.jwt_secret);
+    }
 
-    res.send('Success: ' + auth_result);
+    res.send(auth_result);
+  });
+
+  api.post('/api/getServerList', auth, async (req, res) => {
+    try {
+      const groups = (await db.find('groups', { webAdmins: req?.user_id }));
+
+      const groups_data = await Promise.all(groups.map(async (g) => ({
+        group: await bot.telegram.getChat(g.chat_id), ...g
+      })));
+
+      res.send({ found: groups_data, success: 1 });
+    } catch (error) {
+      res.send({ found: [], success: 0, error });
+    }
+  });
+
+  api.post('/api/getBirthdays', auth, async (req, res) => {
+    try {
+      if (!req?.body?.chat_id) {
+        return res.send({ success: 0, error: 'Chat id not found' });
+      }
+
+      const birthdays = (await db.find('birthdays', { chat_id: req?.body?.chat_id }));
+
+      res.send({ found: birthdays, success: 1 });
+    } catch (error) {
+      res.send({ found: [], success: 0, error });
+    }
   });
 
   return api;
@@ -26,7 +61,7 @@ const startWebappServer = (port) => {
 
   const app = registerApiRoutes();
 
-  console.log("Starting node server... 🚀");
+  console.log('Starting node server... 🚀');
 
   // Start the Express server
   const server = app.listen(PORT, () =>
@@ -34,15 +69,15 @@ const startWebappServer = (port) => {
   );
 
   // Error handling
-  server.on("error", (error) => {
-    console.error("Server error:", error);
+  server.on('error', (error) => {
+    console.error('Server error:', error);
   });
 
   // Graceful shutdown
-  process.on("SIGTERM", () => {
-    console.log("SIGTERM signal received: closing HTTP server");
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM signal received: closing HTTP server');
     server.close(() => {
-      console.log("Server closed");
+      console.log('Server closed');
     });
   });
 }
@@ -59,29 +94,54 @@ const telegramAuth = (data) => {
 
   // 3. Calculating the secret key.
   const secretKey = crypto
-    .createHash("sha256")
+    .createHash('sha256')
     .update(config.telegraf_key)
     .digest();
 
   // 4. Computing HMAC for the verification string.
   const computedHash = crypto
-    .createHmac("sha256", secretKey)
+    .createHmac('sha256', secretKey)
     .update(dataCheckString)
-    .digest("hex");
+    .digest('hex');
 
   // 5. Comparing the computed HMAC with hash.
   if (computedHash !== hash) {
-    return { success: 0, message: 'Verification failed' };
+    return { success: 0, error: 'Verification failed' };
   }
 
   // 6. Checking the auth_date for its validity.
   const CURRENT_UNIX_TIME = Math.floor(Date.now() / 1000);
   const TIMEOUT_SECONDS = 3600; // Approximately 1 hour
   if (CURRENT_UNIX_TIME - Number(data.auth_date) > TIMEOUT_SECONDS) {
-    return { success: 0, message: 'Verification timeout' };
+    return { success: 0, error: 'Verification timeout' };
   }
 
   return { success: 1, message: 'Ok' }
 }
+
+const auth = async (req, res, next) => {
+  try {
+    const authHeader = req.header('Authorization');
+    if (!authHeader) {
+      return res.status(401).send({ success: 0, error: 'Missing Authorization header' });
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    
+    try {
+      const jwt_res = (jwt.verify(token, config.jwt_secret));
+      req.user_id = jwt_res.id;
+    } catch (err) {
+      return res.status(401).send({ success: 0, error: 'Invalid JWT token' });
+    }
+
+    req.token = token;
+
+    next();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ success: 0, error: 'Internal server error' });
+  }
+};
 
 export default startWebappServer;

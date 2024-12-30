@@ -65,9 +65,10 @@ module.exports = {
   ],
   devServer: {
     static: './dist/',
-    open: true,
+    open: false,
     port: 3001,
     allowedHosts: "all",
+    hot: false,
     client: {
       overlay: {
         warnings: false,

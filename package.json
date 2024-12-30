@@ -23,6 +23,7 @@
     "cors": "^2.8.5",
     "cron": "^1.8.2",
     "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^3.6.3",
     "telegraf": "^3.38.0"
   }
