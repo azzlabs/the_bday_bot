@@ -2,7 +2,7 @@ import React, { useContext } from "react";
 import { LoginButton } from '@telegram-auth/react';
 import { WebUIContext } from "../BdayBotWebUI";
 import { http } from "../../utils/Utils";
-const botName = 'the_bday_test_bot';
+const botName = process.env.BOT_NAME;
 
 const LoginComponent = () => {
   const { setCurrentUser, setMessage } = useContext(WebUIContext);
